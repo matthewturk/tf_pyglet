@@ -72,6 +72,12 @@ class TransferFunctionWidget(WindowWidget):
             return False
         xb1, xb2 = self.compute_bin_range(x - self.x0, dx)
         yv1, yv2 = self.compute_val_range(y - self.y0, dy)
+        if buttons & pyglet.window.mouse.RIGHT:
+            if modifiers & pyglet.window.key.MOD_SHIFT:
+                yv1 = yv2 = 0.0
+            else:
+                yv1 = yv2 = 1.0
+
         if dx < 0: yv2, yv1 = yv1, yv2
         self.vals[self.active][1,xb1:xb2] = np.mgrid[yv1:yv2:(xb2 - xb1)*1j]
         self.update_draw(self.active)
