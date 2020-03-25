@@ -100,14 +100,17 @@ class TransferFunctionImage(WindowWidget):
         self.tf_widget = tf_widget
         super(TransferFunctionImage, self).__init__(window, x0, y0, width, height)
 
-    def setup(self):
-        ii = np.vstack(self.tf_widget.colors[c][:,2]
-                         for c in ('red', 'green', 'blue')).copy(order="C")
+    def create_image_data(self):
+        ii = np.vstack([(self.tf_widget.vals[c][1,:] * 255).astype("u1")
+                         for c in ('red', 'green', 'blue')]).copy(order="F")
         self.image_data = pyglet.image.ImageData(
             self.tf_widget.N_bins, 1,
             'RGB', get_numpy_data(ii),
-            3,
+            3*self.tf_widget.N_bins
         )
+
+    def setup(self):
+        self.create_image_data()
         self.sprite = pyglet.sprite.Sprite(self.image_data, self.x0, self.y0)
         self.sprite.update(scale_x = self.width / self.tf_widget.N_bins,
                            scale_y = self.height)
@@ -119,13 +122,11 @@ class TransferFunctionImage(WindowWidget):
         pass
 
     def update_sprite(self):
-        bits = np.vstack(self.tf_widget.colors[c][:,2]
-                         for c in ('red', 'green', 'blue')).copy(order="C")
-        self.image_data.set_data("RGB", bits.shape[1]*3, get_numpy_data(bits))
-        self.sprite.image.blit_into(self.image_data, 0, 0, 0)
+        self.create_image_data()
+        self.sprite.image = self.image_data
 
     def on_draw(self):
-        #self.update_sprite()
+        self.update_sprite()
         self.sprite.draw()
 
 class TransferFunctionWindow(pyglet.window.Window):
