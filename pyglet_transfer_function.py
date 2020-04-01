@@ -19,7 +19,8 @@ def get_numpy_data(arr):
      return arr.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8 * arr.size))[0]
 
 class WindowWidget:
-    def __init__(self, window, x0, y0, width, height):
+    def __init__(self, window, x0, y0, width, height, draw_border = False):
+        self.draw_border = draw_border
         self.window = window
         self.x0 = x0
         self.y0 = y0
@@ -35,6 +36,20 @@ class WindowWidget:
     def local_scale(self, x, y):
         return (x - self.x0)/self.width, (y - self.y0)/self.height
 
+    def do_draw(self):
+        pass
+
+    def on_draw(self):
+        self.do_draw()
+        if self.draw_border:
+            pyglet.graphics.draw(4, pyglet.gl.GL_LINE_LOOP,
+                ('v2f', [self.x0, self.y0,
+                         self.x0 + self.width, self.y0,
+                         self.x0 + self.width, self.y0 + self.height,
+                         self.x0, self.y0 + self.height]),
+                ('c3B', [255 for _ in range(4 * 3)])
+            )
+
 class TransferFunctionWidget(WindowWidget):
 
     def setup(self):
@@ -42,11 +57,13 @@ class TransferFunctionWidget(WindowWidget):
         self.vals = {}
         self.colors = {}
         self.draw = {}
-        self.N_bins = 128
+        self.N_bins = 256
 
+        viridis = np.array(plt.get_cmap("viridis").colors)
         for i, color in enumerate(('red', 'green', 'blue')):
             self.vals[color] = np.vstack([np.mgrid[0.0:1.0:1j*self.N_bins],
                                      np.mgrid[0.0:1.0:self.N_bins*1j]]).copy(order="F")
+            self.vals[color][1,:] = viridis[:,i]
             self.colors[color] = np.zeros((self.N_bins, 3), dtype="u1").copy(order="C")
             self.colors[color][:,i] = 255
             self.update_draw( color)
@@ -95,7 +112,7 @@ class TransferFunctionWidget(WindowWidget):
             return True
         return False
 
-    def on_draw(self):
+    def do_draw(self):
         for color in ('red', 'green', 'blue'):
             pyglet.graphics.draw(self.N_bins, pyglet.gl.GL_LINE_STRIP,
                 ('v2f', self.draw[color].ravel(order="F")),
@@ -131,7 +148,7 @@ class TransferFunctionImage(WindowWidget):
         self.create_image_data()
         self.sprite.image = self.image_data
 
-    def on_draw(self):
+    def do_draw(self):
         self.update_sprite()
         self.sprite.draw()
 
